@@ -27,14 +27,14 @@ class DataTransformation:
         self.lemmatizer = WordNetLemmatizer()
         self.stop_word = set(stopwords.words('english'))
         self.severity_map = {
-            'blocker': 'Critical',
-            'critical': 'Critical',
-            'major': 'High',
-            'normal': 'Medium',
-            'S3': 'Medium',
-            'minor': 'Low',
-            'trivial': 'Low',
-            'S4': 'Low'
+        'blocker': 3,   # Critical
+        'critical': 3,  # Critical
+        'major': 2,     # High
+        'normal': 1,    # Medium
+        'S3': 1,        # Medium
+        'minor': 0,     # Low
+        'trivial': 0,   # Low
+        'S4': 0         # Low
         }
 
     def clean_text(self, text):
