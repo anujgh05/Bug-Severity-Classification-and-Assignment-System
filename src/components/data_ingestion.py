@@ -21,6 +21,12 @@ class DataIngestion:
         self.ingestion_config = DataIngestionConfig()
 
     def initiate_data_ingestion(self):
+        if os.path.exists(self.ingestion_config.raw_data_path):
+            logging.info("Data already exists in arifacts. Skipping downloading")
+            return(
+                self.ingestion_config.train_data_path,
+                self.ingestion_config.test_data_path
+            )
         logging.info("Entered the data ingestion method")
         try:
             url = "https://bugzilla.mozilla.org/rest/bug"
