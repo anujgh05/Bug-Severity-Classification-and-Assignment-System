@@ -32,7 +32,7 @@ class DataIngestion:
             url = "https://bugzilla.mozilla.org/rest/bug"
             params = {
             'status': 'RESOLVED',
-            'limit': 3000,
+            'limit': 10000,
             'include_fields': 'id,summary,description,severity,assigned_to'
             }
 

@@ -3,7 +3,7 @@ from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
 from src.exception import CustomException
 from src.logger import logging
-
+from src.components.model_trainer import ModelTrainer
 class TrainPipeline:
     def run_pipeline(self):
         try:
@@ -17,11 +17,14 @@ class TrainPipeline:
                 train_data_path, test_data_path
             )
 
-            '''
-            For Model Training
-            '''
+            model_trainer = ModelTrainer()
+            accuracy = model_trainer.initiate_model_trainer(
+                train_arr=train_arr,
+                test_arr=test_arr
+            )
 
-            logging.info("Pipeline Finished Successfully")
+
+            logging.info(f"Pipeline Finished Successfully with accuracy{accuracy:.4f}")
 
         except Exception as e:
             raise CustomException(error_message=e, error_detail=sys)
