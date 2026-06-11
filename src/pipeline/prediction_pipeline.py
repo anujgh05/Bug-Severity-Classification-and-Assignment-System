@@ -11,6 +11,8 @@ from src.utils import load_object
 from sklearn.feature_extraction.text import TfidfVectorizer
 from src.exception import CustomException
 from src.logger import logging
+import psycopg2
+
 
 class PredictPipeline:
     def __init__(self):
@@ -59,16 +61,31 @@ class PredictPipeline:
 
             if max_confidence >= CONFIDENCE_THRESHOLD:
                 severity_result = self.decode_map[int(predicted_encoded)]
-                flag_status = "Automated"
+                routing_status = "automated"
             else:
                 severity_result = f"Pending Manual Review (Low Confidence: {max_confidence*100:.1f}%)"
-                flag_status = "Flagged"
+                routing_status = "pending_review"
 
-            logging.info(f"Prediction Status: {flag_status} | Assigned Tag: {severity_result}")
+            conn_info = "host=localhost dbname='Minor Project' user='postgres' password=2005 port=5432"
+
+            with psycopg2.connect(conn_info) as conn:
+                with conn.cursor() as cur:
+                    query = """
+                    INSERT INTO bug_reports (summary, description, predicted_severity, final_severity, confidence_score, routing_status)
+                    VALUES (%s, %s, %s, %s, %s, %s) RETURNING bug_id;
+                    """
+                    final_sev = severity_result if routing_status == "automated" else None
+                    conf_float = float(max_confidence*100)
+
+                    cur.execute(query,(summary, description, severity_result, final_sev, conf_float, routing_status))
+                    bug_id = cur.fetchone()[0]
+            logging.info(f"Bug saved to database with ID: {bug_id} | Status: {routing_status}")
             return {
+                "bug_id": bug_id,
                 "severity": severity_result,
-                "confidence": f"{max_confidence * 100:.2f}%",
-                "status": flag_status
+                "confidence": f"{conf_float:.2f}%",
+                "status": routing_status,
+                "cleaned_text": cleaned_text # Passed along so assignment engine doesn't have to clean text again
             }
 
         except Exception as e:

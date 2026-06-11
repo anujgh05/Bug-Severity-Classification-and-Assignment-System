@@ -1,25 +1,30 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, jsonify, render_template
 from src.pipeline.prediction_pipeline import PredictPipeline
+from src.pipeline.assignment_pipeline import AssignmentPipeline 
 
 app = Flask(__name__)
-pipeline = PredictPipeline()
+
+predict_pipeline = PredictPipeline()
+assignment_pipeline = AssignmentPipeline()
 
 @app.route('/')
 def index():
-    # Simple form interface (Create an index.html template or use basic text inputs)
     return """
     <html>
-        <head><title>Bug Triage Engine</title></head>
-        <body style="font-family: Arial; margin: 40px;">
-            <h2>Bug Severity Classification System</h2>
-            <form action="/predict" method="post" style="display: flex; flex-direction: column; width: 400px; gap: 15px;">
-                <label><b>Bug Summary (Headline):</b></label>
-                <input type="text" name="summary" placeholder="e.g., App crashes on startup" required style="padding: 8px;">
-                
-                <label><b>Bug Description (Logs / Steps):</b></label>
-                <textarea name="description" rows="6" placeholder="e.g., NullPointerException at MainActivity.java line 43..." required style="padding: 8px;"></textarea>
-                
-                <button type="submit" style="padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer;">Analyze Severity</button>
+        <body style="font-family: Arial; margin: 50px; max-width: 600px;">
+            <h2>Bug Reporting Triage System</h2>
+            <form action="/predict" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="font-weight: bold;">Bug Summary:</label><br>
+                    <input type="text" name="summary" style="width: 100%; padding: 8px;" placeholder="e.g., Database connection timeout on login" required>
+                </div>
+                <div>
+                    <label style="font-weight: bold;">Detailed Description:</label><br>
+                    <textarea name="description" rows="6" style="width: 100%; padding: 8px;" placeholder="e.g., Driver throws connection refusion error after 30 seconds of inactivity..." required></textarea>
+                </div>
+                <button type="submit" style="padding: 10px; background-color: #007BFF; color: white; border: none; cursor: pointer; font-weight: bold;">
+                    Analyze & Route Bug
+                </button>
             </form>
         </body>
     </html>
@@ -31,20 +36,38 @@ def predict_datapoint():
         summary = request.form.get('summary')
         description = request.form.get('description')
 
-        result = pipeline.predict(summary, description)
+        if not summary or not description:
+            return jsonify({"error": "Missing summary or description"}), 400
 
-        text_color = "green" if result["status"] == "Automated" else "orange"
+        # Step 1: Run classification and save initial bug log
+        classification_result = predict_pipeline.predict(summary, description)
+        
+        bug_id = classification_result["bug_id"]
+        cleaned_text = classification_result["cleaned_text"]
+        routing_status = classification_result["status"]
 
+        # Step 2: Run developer assignment conditional loop
+        assigned_dev_message = ""
+        if routing_status == "automated":
+            # Pass the bug details directly to the assignment engine
+            dev_id, sim_score = assignment_pipeline.assign_developer(bug_id, cleaned_text)
+            assigned_dev_message = f"Automatically assigned to Developer ID {dev_id} (Similarity: {sim_score*100:.1f}%)"
+        else:
+            assigned_dev_message = "Assignment held back. Bug requires human verification first."
+
+        # Step 3: Send responses to UI template
         return f"""
         <html>
             <body style="font-family: Arial; margin: 40px; line-height: 1.6;">
-                <h2>Analysis Result</h2>
-                <p><b>Summary:</b> {summary}</p>
-                <p><b>System Routing Status:</b> <span style="color: {text_color}; font-weight: bold;">{result["status"]}</span></p>
-                <p><b>Model Confidence Score:</b> {result["confidence"]}</p>
-                <p><b>Assigned Class/Action:</b> <span style="font-weight: bold;">{result["severity"]}</span></p>
+                <h2>System Routing Pipeline Logs</h2>
+                <p><b>Database Bug ID:</b> {bug_id}</p>
+                <p><b>Predicted Severity:</b> {classification_result["severity"]}</p>
+                <p><b>Pipeline Confidence:</b> {classification_result["confidence"]}</p>
+                <p><b>Routing Flag:</b> {routing_status.upper()}</p>
+                <hr>
+                <p style="color: blue; font-weight: bold;"><b>Resource Allocation:</b> {assigned_dev_message}</p>
                 <br>
-                <a href="/">Go Back</a>
+                <a href="/">File Another Bug</a>
             </body>
         </html>
         """
