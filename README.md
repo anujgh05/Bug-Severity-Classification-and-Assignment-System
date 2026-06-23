@@ -1,3 +1,5 @@
+
+
 ---
 
 # Bug Severity Classification and Assignment System
@@ -31,6 +33,8 @@ The system is engineered as an integrated **Three-Tier Architecture** that enfor
 2. **Application Layer:** An isolated processing backend orchestrating text normalization, TF-IDF transformations, SVM soft-classification boundaries, and localized corpus vectorization.
 3. **Data Layer:** A reliable PostgreSQL instance handling relational schema enforcement, primary key B-Tree indexing, and transaction tracking.
 
+> ⚠️ **Development Status Note on Frontend:** The current implementation of `app.py` serves strictly as a **temporary backend prototype and functional proof-of-concept**. It renders basic HTML elements to demonstrate data flows, pipeline logs, and database entry generation. Building the decoupled, comprehensive production frontend (e.g., using a modern component-based framework like React) is planned for the next implementation phase.
+
 ---
 
 ## 📁 Repository Structure
@@ -48,7 +52,7 @@ The system is engineered as an integrated **Three-Tier Architecture** that enfor
 │   ├── exception.py            # Global custom system exceptions tracker
 │   ├── logger.py               # Runtime operational activity logging
 │   └── utils.py                # Serialized model read/write helpers
-├── app.py                      # Core web routing backend execution engine
+├── app.py                      # Temporary web routing backend execution engine
 ├── requirements.txt            # System dependencies list
 └── README.md                   # Technical project overview documentation
 
@@ -104,7 +108,7 @@ python app.py
 
 ```
 
-Navigate to `http://127.0.0.1:5000/` in your web browser to access the submission dashboard interface.
+Navigate to `http://127.0.0.1:5000/` in your web browser to access the temporary submission dashboard interface.
 
 ---
 
