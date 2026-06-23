@@ -1,116 +1,128 @@
+---
 
 # Bug Severity Classification and Assignment System
 
-This project is a machine learning-based tool designed to automate the triage process for open-source projects. It specifically focuses on **classifying the severity** of incoming bug reports and **assigning the most suitable developer** based on historical performance.
+An automated, data-driven Intelligent Triage Engine designed to optimize software maintenance workflows. The system leverages machine learning to classify incoming bug reports into distinct severity tiers and utilizes advanced semantic vector mapping to automatically route tasks to the most suitable developers while dynamically balancing active workloads.
 
-## 🚀 Project Overview
+## 🚀 Core Features
 
-The system utilizes data fetched from the **Mozilla Bugzilla API**. It processes raw bug summaries and descriptions to:
+* **Automated Severity Classification:** Implements a Support Vector Machine (SVM) pipeline using TF-IDF feature engineering to classify bug descriptions into four severity metrics (`Low`, `Medium`, `High`, `Critical`).
+* **Confidence-Based Gatekeeper (DSS):** Utilizes Platt Scaling probability estimations to enforce a minimum $55\%$ operational threshold. Ambiguous, low-confidence entries are flagged for manual review to preserve data integrity.
+* **Dynamic Semantic Routing:** Maps incoming text requests against available development pools via **Cosine Similarity** matrix comparisons to ensure precise expertise alignment.
+* **Dynamic Load Balancing:** Implements a structural heuristic step-penalty ($\Delta = 0.15$) on overloaded nodes ($\ge 5$ active tickets) to prevent developer burnout and minimize pipeline bottlenecks.
+* **Relational Integrity Core:** Backed by an atomic, multi-table PostgreSQL transaction layer tracking ticket states, team workload metrics, and permanent historical allocations.
 
-1. **Classify Severity**: Map reports into four categories: `Critical`, `High`, `Medium`, and `Low` using a **Support Vector Machine (SVM)**.
-2. **Recommend Developers**: Suggest experts using **Cosine Similarity** based on their previous bug-fixing history.
+---
+
+## 🏗️ System Architecture
+
+The system is engineered as an integrated **Three-Tier Architecture** that enforces a strict separation of concerns between raw mathematical modeling, server routing, and structural data storage.
+
+```text
+  [ Presentation Layer ]          [ Application Layer ]            [ Data Layer ]
+  ┌────────────────────┐          ┌────────────────────┐        ┌──────────────────┐
+  │  React / HTML UI   │ ◄──────► │ Flask / FastAPI    │ ◄────► │  PostgreSQL DB   │
+  │  (Triage Dashboard)│  (REST)  │ (Predict Pipeline) │ (SQL)  │ (Bugs & Devs tabs)│
+  └────────────────────┘          └────────────────────┘        └──────────────────┘
+
+```
+
+1. **Presentation Layer:** A responsive dashboard for users to submit bug entries and triage managers to supervise flagged tasks.
+2. **Application Layer:** An isolated processing backend orchestrating text normalization, TF-IDF transformations, SVM soft-classification boundaries, and localized corpus vectorization.
+3. **Data Layer:** A reliable PostgreSQL instance handling relational schema enforcement, primary key B-Tree indexing, and transaction tracking.
+
+---
+
+## 📁 Repository Structure
+
+```text
+├── artifacts/                  # Trained serialized assets (.pkl, .csv)
+├── src/
+│   ├── components/
+│   │   ├── data_ingestion.py   # Pipeline raw content importing
+│   │   ├── data_transformation.py # Feature extraction and token clean sweeps
+│   │   └── model_trainer.py    # SVM model training script
+│   ├── pipeline/
+│   │   ├── predict_pipeline.py # Classification inference logic
+│   │   └── assignment_pipeline.py # Cosine similarity allocation matching
+│   ├── exception.py            # Global custom system exceptions tracker
+│   ├── logger.py               # Runtime operational activity logging
+│   └── utils.py                # Serialized model read/write helpers
+├── app.py                      # Core web routing backend execution engine
+├── requirements.txt            # System dependencies list
+└── README.md                   # Technical project overview documentation
+
+```
 
 ---
 
 ## 🛠️ Installation & Setup
 
-1. **Clone the repository:**
+### 1. Prerequisites
+
+Ensure you have the following environments configured on your machine:
+
+* Python 3.8+
+* Anaconda / Miniconda Environment Manager
+* PostgreSQL Database Engine
+
+### 2. Environment Configuration
+
+Clone the repository and spin up an isolated virtual environment:
+
 ```bash
-git clone https://github.com/anujgh05/Bug-Severity-Classification-and-Assignment-System.git
-cd "Bug-Severity-Classification-and-Assignment-System"
+# Clone the workspace
+git clone https://github.com/yourusername/bug-triage-system.git
+cd bug-triage-system
 
-```
+# Create and activate environment
+conda create -p venv python=3.9 -y
+conda activate venv/
 
-
-2. **Create a Virtual Environment:**
-```bash
-python -m venv venv
-# Activate on Windows:
-venv\Scripts\activate
-
-```
-
-
-3. **Install Dependencies:**
-```bash
+# Install engineering dependencies
 pip install -r requirements.txt
 
 ```
 
+### 3. Database Initialisation
 
-4. **Prepare NLTK Data:**
-The system uses NLTK for text processing. Run these in your Python terminal if they don't download automatically:
-```python
-import nltk
-nltk.download('stopwords')
-nltk.download('wordnet')
-
-```
-
-
-
----
-
-## 🏗️ Current Pipeline Progress
-
-The project follows a modular component-based architecture:
-
-* ✅ **Data Ingestion**: Fetches 3,000+ bug reports via API and performs an 80/20 train-test split.
-* ✅ **Data Transformation**:
-* Cleans text (stopword removal, lemmatization).
-* Maps 8+ Bugzilla severity labels to a standardized 4-level hierarchy.
-* Converts text to numerical vectors using **TF-IDF Vectorization**.
-
-
-* ⏳ **Model Training**: *[In Progress]*
-* ⏳ **Prediction Pipeline**: *[To be implemented]*
-
----
-
-## 📝 Guidance for Contributors (Model Trainer & Predictor)
-
-If you are implementing the remaining components, please follow these specifications:
-
-### 1. Model Trainer (`src/components/model_trainer.py`)
-
-* **Input**: Expects `train_arr` and `test_arr` (NumPy arrays) from the transformation step.
-* **Data Format**:
-* **Features**: All columns except the last one (TF-IDF features).
-* **Target**: The very last column (Categorical Severity).
-
-
-* **Model**: Implement a **Support Vector Machine (SVM)** with an RBF kernel.
-* **Output**: Save the trained model as `artifacts/model.pkl`.
-
-### 2. Prediction Pipeline (`src/pipeline/predict_pipeline.py`)
-
-* This should be a standalone class that loads `model.pkl` and `preprocessor.pkl`.
-* It must take a raw `summary` and `description` string, transform them using the loaded preprocessor, and return the predicted severity category.
-
----
-
-## 📁 Directory Structure
-
-```text
-├── artifacts/           # Local data and serialized models (Git Ignored)
-├── logs/                # Execution logs (Git Ignored)
-├── src/
-│   ├── components/      # Ingestion, Transformation, Trainer
-│   ├── pipeline/        # Train and Predict pipelines
-│   ├── logger.py        # Custom logging setup
-│   └── exception.py     # Custom error handling
-├── app.py               # Flask/Streamlit Web App (Planned)
-└── requirements.txt     # Project dependencies
-
-```
-
----
-
-## 🏃 How to Run the Pipeline
-
-To trigger the current workflow (Ingestion + Transformation), run:
+Ensure your PostgreSQL instance is running locally. Modify the `CONN_INFO` variable parameters inside your configuration initialization scripts to match your user credentials (`user`, `password`, `port`), then seed the tables:
 
 ```bash
-python src/pipeline/train_pipeline.py
+python src/utils/db_init.py
 
 ```
+
+*This handles conditional execution to generate `developer_profiles`, `bug_reports`, and `assignment_history` schemas and sets up initial dummy developer pool configurations.*
+
+### 4. Booting up the Application Server
+
+Fire up the server pipeline instance:
+
+```bash
+python app.py
+
+```
+
+Navigate to `http://127.0.0.1:5000/` in your web browser to access the submission dashboard interface.
+
+---
+
+## 📊 Database Schema Blueprint
+
+The application shifts away from flat file layouts to guarantee transactional consistency using three cross-referenced entities:
+
+* **`developer_profiles`**: Tracks workforce identities, raw semantic competence text parameters (`expertise_profile`), operational status flags, and cumulative backlog ticket numbers.
+* **`bug_reports`**: Captures incoming user text structures, target classifications, probability scalars, allocation tags, and cosine alignment percentages.
+* **`assignment_history`**: Maintains historical audit entries tracking whether tasks were executed via automated pipelines or manual administrator interventions.
+
+---
+
+## 🔬 Core Methodologies Implemented
+
+* **Text Normalization:** Lowercasing, punctuation filtering, stopword elimination, and lemmatization using NLTK parsing engines.
+* **Term Frequency-Inverse Document Frequency (TF-IDF):** Transforms unstructured raw text matrices into standard quantitative configurations.
+* **Support Vector Machine (SVM):** Utilizes radial basis function kernels coupled with Platt Scaling mapping loops to enable probability confidence thresholds.
+* **Cosine Proximity Function:** Captures semantic directionality alignment between localized multi-dimensional vectors.
+
+---
