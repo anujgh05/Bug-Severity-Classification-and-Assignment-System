@@ -24,7 +24,7 @@ class PredictPipeline:
             self.model = load_object(file_path=self.model_path)
             self.preprocessor = load_object(file_path=self.preprocessor_path)
 
-            self.decode_map = {3: "Critical", 2: "High", 1: "Medium", 0: "Low"}
+            self.decode_map = {2: "High", 1: "Medium", 0: "Low"}
             self.lemmatizer = WordNetLemmatizer()
 
             self.stop_word = set(stopwords.words("english"))
@@ -53,14 +53,15 @@ class PredictPipeline:
 
             numerical_vector = self.preprocessor.transform([cleaned_text]).toarray()
             
+            predicted_class = int(self.model.predict(numerical_vector)[0])
+
             probabilities = self.model.predict_proba(numerical_vector)[0]
             max_confidence = max(probabilities)
-            predicted_encoded = probabilities.tolist().index(max_confidence)
 
             CONFIDENCE_THRESHOLD = 0.55
 
             if max_confidence >= CONFIDENCE_THRESHOLD:
-                severity_result = self.decode_map[int(predicted_encoded)]
+                severity_result = self.decode_map[predicted_class]
                 routing_status = "automated"
             else:
                 severity_result = f"Pending Manual Review (Low Confidence: {max_confidence*100:.1f}%)"

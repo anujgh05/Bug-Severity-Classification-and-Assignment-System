@@ -6,4 +6,6 @@ requests
 dill
 psycopg2
 flask
+beautifulsoup4
+clean-text
 -e .

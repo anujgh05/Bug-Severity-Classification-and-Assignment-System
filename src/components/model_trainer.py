@@ -28,7 +28,7 @@ class ModelTrainer:
 
             logging.info("Starting SVM..")
 
-            model = SVC(kernel='rbf',C=10 ,probability=True, class_weight='balanced')
+            model = SVC(kernel='linear',C=1.0, max_iter=3000 ,probability=True, class_weight='balanced')
             model.fit(X_train, y_train)
 
             logging.info("Model Training Completed. Evaluating performance")
