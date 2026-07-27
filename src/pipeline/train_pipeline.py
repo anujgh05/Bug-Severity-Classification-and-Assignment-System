@@ -13,14 +13,16 @@ class TrainPipeline:
             train_data_path, test_data_path = ingestion.initiate_data_ingestion()
 
             data_transformation = DataTransformation()
-            train_arr, test_arr, preprocessor_path = data_transformation.initiate_data_transformation(
+            X_train, X_test, y_train, y_test, preprocessor_path = data_transformation.initiate_data_transformation(
                 train_data_path, test_data_path
             )
 
             model_trainer = ModelTrainer()
             accuracy = model_trainer.initiate_model_trainer(
-                train_arr=train_arr,
-                test_arr=test_arr
+                X_train=X_train,
+                X_test=X_test,
+                y_train=y_train,
+                y_test=y_test
             )
 
 

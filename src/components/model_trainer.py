@@ -1,4 +1,6 @@
-from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.frozen import FrozenEstimator
 from sklearn.metrics import classification_report, accuracy_score
 from dataclasses import dataclass
 import os
@@ -15,34 +17,43 @@ class ModelTrainer:
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
     
-    def initiate_model_trainer(self, train_arr, test_arr):
+    def initiate_model_trainer(self, X_train, X_test, y_train, y_test):
         try:
-            logging.info("Splitting the dependent and independent variables")
+            logging.info("Received X_train, X_test, y_train, y_test for training...")
 
-            X_train, y_train, X_test, y_test = (
-                train_arr[:,:-1],
-                train_arr[:,-1],
-                test_arr[:,:-1],
-                test_arr[:,-1]
+            logging.info("Starting Random Forest model training...")
+
+            best_n_estimators = 500
+            best_max_depth = None
+
+            best_rf = RandomForestClassifier(
+                n_estimators=best_n_estimators,
+                max_depth=best_max_depth,
+                random_state=42,
+                class_weight='balanced',
+                n_jobs=-1
             )
+            best_rf.fit(X_train, y_train)
 
-            logging.info("Starting SVM..")
+            logging.info("Calibrating classifier with FrozenEstimator isotonic calibration...")
+            calibrated_model = CalibratedClassifierCV(
+                estimator=FrozenEstimator(best_rf),
+                method='isotonic'
+            )
+            calibrated_model.fit(X_train, y_train)
 
-            model = SVC(kernel='linear',C=1.0, max_iter=3000 ,probability=True, class_weight='balanced')
-            model.fit(X_train, y_train)
+            logging.info("Model Training & Calibration Completed. Evaluating performance...")
 
-            logging.info("Model Training Completed. Evaluating performance")
-
-            predicted = model.predict(X_test)
+            predicted = calibrated_model.predict(X_test)
             accuracy = accuracy_score(y_test, predicted)
 
-            logging.info(f"Model Accuracy:{accuracy}")
-            logging.info(f"Classification report:\n {classification_report(y_test,predicted)}")
+            logging.info(f"Calibrated Model Accuracy: {accuracy:.4f}")
+            logging.info(f"Classification report:\n {classification_report(y_test, predicted)}")
 
             save_object(
                 file_path=self.model_trainer_config.trained_model_filepath,
-                obj=model
+                obj=calibrated_model
             )
             return accuracy
         except Exception as e:
-            raise CustomException(e,sys)
+            raise CustomException(e, sys)

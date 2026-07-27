@@ -14,6 +14,27 @@ from src.logger import logging
 import psycopg2
 
 
+from bs4 import BeautifulSoup
+from cleantext import clean
+
+BUGZILLA_NOISE_PATTERNS = [
+    r'created by .+? on \w+, \w+ \d+, \d{4} [\d:]+ [apm]+ p[ds]t',
+    r'updated by .+? on \w+, \w+ \d+, \d{4} [\d:]+ [apm]+ p[ds]t',
+    r'additional details\s*:',
+    r'i have this on my internal buglist.*',
+    r'so i will take it\.?',
+]
+
+NOISE_RE = re.compile('|'.join(BUGZILLA_NOISE_PATTERNS), re.IGNORECASE)
+
+CUSTOM_STOPS = {
+    'mozilla', 'firefox', 'please', 'thanks',
+    'would', 'could', 'should', 'also', 'use', 'used', 'using',
+    'created', 'updated', 'additional', 'detail', 'details',
+    'internal', 'buglist', 'netscape', 'pdt', 'pst',
+}
+
+
 class PredictPipeline:
     def __init__(self):
         try:
@@ -24,7 +45,7 @@ class PredictPipeline:
             self.model = load_object(file_path=self.model_path)
             self.preprocessor = load_object(file_path=self.preprocessor_path)
 
-            self.decode_map = {2: "High", 1: "Medium", 0: "Low"}
+            self.decode_map = {2: "Critical Priority", 1: "High Priority", 0: "Low Priority"}
             self.lemmatizer = WordNetLemmatizer()
 
             self.stop_word = set(stopwords.words("english"))
@@ -36,11 +57,38 @@ class PredictPipeline:
         try:
             if not isinstance(text, str):
                 return ""
-            
-            text = text.lower()
-            text = re.sub(r'[^a-z\s]','',text)
+
+            # 1. HTML parsing
+            soup = BeautifulSoup(text, "html.parser")
+            for element in soup(["script", "style"]):
+                element.decompose()
+            text = soup.get_text()
+
+            # 2. Boilerplate noise removal
+            text = NOISE_RE.sub(' ', text)
+
+            # 3. cleantext cleaning
+            text = clean(text,
+                        lower=True,
+                        no_urls=True,
+                        no_emails=True,
+                        no_phone_numbers=True,
+                        no_numbers=True,
+                        no_punct=True,
+                        replace_with_url=" ",
+                        replace_with_email=" ",
+                        replace_with_phone_number=" ",
+                        replace_with_number=" "
+                        )
+
             words = text.split()
-            words = [self.lemmatizer.lemmatize(w) for w in words if w not in self.stop_word]
+            words = [
+                self.lemmatizer.lemmatize(w)
+                for w in words
+                if w not in self.stop_word
+                and w not in CUSTOM_STOPS
+                and len(w) > 1
+            ]
             return " ".join(words)
 
         except Exception as e:

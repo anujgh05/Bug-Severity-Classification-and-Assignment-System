@@ -55,7 +55,7 @@ class DataTransformation:
             NOISE_RE = re.compile('|'.join(BUGZILLA_NOISE_PATTERNS), re.IGNORECASE)
 
             custom_stops = {
-                'bug', 'issue', 'error', 'mozilla', 'firefox', 'please', 'thanks',
+                'mozilla', 'firefox', 'please', 'thanks',
                 'would', 'could', 'should', 'also', 'use', 'used', 'using',
                 # Bugzilla metadata stragglers
                 'created', 'updated', 'additional', 'detail', 'details',
@@ -108,15 +108,19 @@ class DataTransformation:
 
             for df in [train_df, test_df]:
                 df['severity'] = df['severity'].fillna('').astype(str).str.strip().str.lower()
-                df.drop(df[df['severity'].isin(['--', 'normal', ''])].index, inplace=True)
+                df.drop(df[df['severity'].isin(['--', 'normal', 'nan', ''])].index, inplace=True)
                 df['severity'] = df['severity'].map(self.severity_map)
                 df.dropna(subset=['severity'], inplace=True)
 
-                df['summary'] = df['summary'].fillna('')
-                df['description'] = df['description'].fillna('')
+                if 'short_desc' in df.columns:
+                    df['short_desc'] = df['short_desc'].fillna('')
+                    df['text_features'] = df['short_desc'].map(self.clean_text)
+                else:
+                    df['summary'] = df['summary'].fillna('')
+                    df['description'] = df['description'].fillna('')
+                    df['text_features'] = (df['summary'] + " " + df['description']).map(self.clean_text)
 
-                df['text_features'] = df['summary'] + " " + df['description']
-                df['text_features'] = df['text_features'].map(self.clean_text)
+                df.drop(df[df['text_features'].str.strip() == ''].index, inplace=True)
 
             logging.info("Applying TF-IDF Vectorization")
 
@@ -126,15 +130,12 @@ class DataTransformation:
          )
 
             
-            input_feature_train_arr = tfidf.fit_transform(train_df['text_features']).toarray()
-            input_feature_test_arr = tfidf.transform(test_df['text_features']).toarray()
+            X_train = tfidf.fit_transform(train_df['text_features'])
+            X_test  = tfidf.transform(test_df['text_features'])
+            y_train = train_df['severity'].values.astype(int)
+            y_test  = test_df['severity'].values.astype(int)
 
-            target_feature_train_df = train_df['severity']
-            target_feature_test_df = test_df['severity']
-
-            train_arr = np.c_[input_feature_train_arr, np.array(target_feature_train_df)]
-            test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
-
+            logging.info(f"X_train shape: {X_train.shape} | X_test shape: {X_test.shape}")
             logging.info("Saving preprocessor (TF-IDF) object")
 
             save_object(
@@ -142,9 +143,11 @@ class DataTransformation:
                 obj=tfidf
             )
 
-            return(
-                train_arr,
-                test_arr,
+            return (
+                X_train,
+                X_test,
+                y_train,
+                y_test,
                 self.data_transformation_config.preprocessor_obj_file_path,
             )
 
