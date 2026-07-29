@@ -6,6 +6,8 @@ requests
 dill
 psycopg2
 flask
+fastapi
+uvicorn[standard]
 beautifulsoup4
 clean-text
 -e .
