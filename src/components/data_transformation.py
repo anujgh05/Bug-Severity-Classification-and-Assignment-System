@@ -29,9 +29,9 @@ class DataTransformation:
         self.lemmatizer = WordNetLemmatizer()
         self.stop_word = set(stopwords.words('english'))
         self.severity_map = {
-            'blocker':  2,   # Critical
+            'blocker':  2,   # High
             'critical': 2,
-            'major':    1,   # High
+            'major':    1,   # Medium
             'minor':    0,   # Low
             'trivial':  0,
             's3':       0,   # Low

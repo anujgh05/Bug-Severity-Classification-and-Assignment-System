@@ -45,7 +45,7 @@ class PredictPipeline:
             self.model = load_object(file_path=self.model_path)
             self.preprocessor = load_object(file_path=self.preprocessor_path)
 
-            self.decode_map = {2: "Critical Priority", 1: "High Priority", 0: "Low Priority"}
+            self.decode_map = {2: "High Priority", 1: "Medium Priority", 0: "Low Priority"}
             self.lemmatizer = WordNetLemmatizer()
 
             self.stop_word = set(stopwords.words("english"))
