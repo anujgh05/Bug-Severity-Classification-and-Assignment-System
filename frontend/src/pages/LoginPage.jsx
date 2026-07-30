@@ -1,116 +1,99 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, User, Code2, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Shield, User, Code2, ArrowRight } from 'lucide-react';
 import { useAuth, ROLES } from '../context/AuthContext.jsx';
-import { getDevelopers } from '../api/axios.js';
 
 const roleCards = [
   {
     id: 'user',
     icon: User,
-    title: 'End User',
-    description: 'Submit bug reports without seeing internal ML metrics in the workflow.',
-    path: ROLES.user.defaultPath,
+    title: 'End User Portal',
+    badge: 'Submit Reports',
+    color: 'indigo',
+    description: 'Submit software bug reports.',
+    loginPath: '/login/user',
+    accentClass: 'hover:border-indigo-500 hover:shadow-indigo-500/10',
+    iconBg: 'bg-indigo-600/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white',
+    btnBg: 'bg-indigo-600/10 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white',
   },
   {
     id: 'admin',
     icon: Shield,
-    title: 'Admin',
-    description: 'Supervisory cockpit for manual triage and developer allocation overrides.',
-    path: ROLES.admin.defaultPath,
+    title: 'Admin Portal',
+    badge: 'Manual Review',
+    color: 'amber',
+    description: 'Supervisory portal for review.',
+    loginPath: '/login/admin',
+    accentClass: 'hover:border-amber-500 hover:shadow-amber-500/10',
+    iconBg: 'bg-amber-500/20 text-amber-400 group-hover:bg-amber-500 group-hover:text-white',
+    btnBg: 'bg-amber-500/10 text-amber-400 group-hover:bg-amber-500 group-hover:text-white',
   },
   {
     id: 'developer',
     icon: Code2,
-    title: 'Developer',
-    description: 'View auto-assigned tasks based on cosine similarity expertise matching.',
-    path: ROLES.developer.defaultPath,
+    title: 'Developer Portal',
+    badge: 'Task Board',
+    color: 'sky',
+    description: 'View assigned tickets.',
+    loginPath: '/login/developer',
+    accentClass: 'hover:border-sky-500 hover:shadow-sky-500/10',
+    iconBg: 'bg-sky-500/20 text-sky-400 group-hover:bg-sky-500 group-hover:text-white',
+    btnBg: 'bg-sky-500/10 text-sky-400 group-hover:bg-sky-500 group-hover:text-white',
   },
 ];
 
 export default function LoginPage() {
-  const { setRole, isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
-  const [developers, setDevelopers] = useState([]);
-  const [selectedDev, setSelectedDev] = useState('');
-  const [loadingDevs, setLoadingDevs] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && role) {
+    if (isAuthenticated && role && ROLES[role]) {
       navigate(ROLES[role].defaultPath, { replace: true });
     }
   }, [isAuthenticated, role, navigate]);
 
-  useEffect(() => {
-    setLoadingDevs(true);
-    getDevelopers()
-      .then(({ data }) => {
-        setDevelopers(data);
-        if (data.length) setSelectedDev(String(data[0].developer_id));
-      })
-      .catch(() => {})
-      .finally(() => setLoadingDevs(false));
-  }, []);
-
-  const handleSelect = (roleId) => {
-    if (roleId === 'developer') {
-      if (!selectedDev) return;
-      setRole('developer', selectedDev);
-      navigate(ROLES.developer.defaultPath);
-      return;
-    }
-    setRole(roleId);
-    navigate(ROLES[roleId].defaultPath);
-  };
-
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl py-4">
       <div className="mb-10 text-center">
-        <h2 className="text-3xl font-bold text-white">Select Your Role</h2>
-        <p className="mt-2 text-slate-400">
-          Role-based access control for the 3-tier SVM bug triage system
+        <h2 className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">
+          Select Login Portal
+        </h2>
+        <p className="mx-auto mt-2 max-w-xl text-sm text-slate-400 sm:text-base">
+          Choose your role below to navigate to the dedicated login portal.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {roleCards.map(({ id, icon: Icon, title, description }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => handleSelect(id)}
-            className="group rounded-xl border border-slate-800 bg-slate-900 p-6 text-left transition-all hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-500/10"
-          >
-            <div className="mb-4 inline-flex rounded-lg bg-indigo-600/20 p-3 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white">
-              <Icon className="h-6 w-6" />
-            </div>
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
-            <p className="mt-2 text-sm text-slate-400">{description}</p>
-          </button>
-        ))}
-      </div>
+      <div className="grid gap-6 md:grid-cols-3">
+        {roleCards.map(
+          ({ id, icon: Icon, title, badge, description, loginPath, accentClass, iconBg, btnBg }) => (
+            <Link
+              key={id}
+              to={loginPath}
+              className={`group flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl transition-all duration-200 ${accentClass}`}
+            >
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className={`rounded-xl p-3 transition-colors ${iconBg}`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                    {badge}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-white">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">{description}</p>
+              </div>
 
-      <div className="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <label htmlFor="developer-select" className="mb-2 block text-sm font-medium text-slate-300">
-          Developer profile (required for Developer role)
-        </label>
-        {loadingDevs ? (
-          <div className="flex items-center gap-2 text-slate-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading developers...
-          </div>
-        ) : (
-          <select
-            id="developer-select"
-            value={selectedDev}
-            onChange={(e) => setSelectedDev(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-white outline-none focus:border-indigo-500"
-          >
-            {developers.map((dev) => (
-              <option key={dev.developer_id} value={dev.developer_id}>
-                {dev.name} — workload: {dev.current_workload}/5
-              </option>
-            ))}
-          </select>
+              <div className="mt-6 flex items-center justify-between border-t border-slate-800/80 pt-4">
+                <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-200">
+                  Open Login Page
+                </span>
+                <div className={`rounded-lg p-2 transition-colors ${btnBg}`}>
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            </Link>
+          ),
         )}
       </div>
     </div>

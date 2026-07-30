@@ -1,6 +1,5 @@
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.frozen import FrozenEstimator
 from sklearn.metrics import classification_report, accuracy_score
 from dataclasses import dataclass
 import os
@@ -26,19 +25,32 @@ class ModelTrainer:
             best_n_estimators = 500
             best_max_depth = None
 
-            best_rf = RandomForestClassifier(
-                n_estimators=best_n_estimators,
-                max_depth=best_max_depth,
+            best_params = {
+                'class_weight': 'balanced',
+                'max_depth': None,
+                'max_features': 'sqrt',
+                'min_samples_leaf': 3,
+                'min_samples_split': 10,
+                'n_estimators': 500,
+            }
+
+            logging.info("Training final Random Forest model with best parameters...")
+            final_rf_estimator = RandomForestClassifier(
+                n_estimators=best_params['n_estimators'],
+                max_depth=best_params['max_depth'],
+                min_samples_leaf=best_params['min_samples_leaf'],
+                min_samples_split=best_params['min_samples_split'],
+                max_features=best_params['max_features'],
                 random_state=42,
-                class_weight='balanced',
+                class_weight=best_params['class_weight'],
                 n_jobs=-1
             )
-            best_rf.fit(X_train, y_train)
 
-            logging.info("Calibrating classifier with FrozenEstimator isotonic calibration...")
+            logging.info("Calibrating classifier with isotonic calibration and cv=5...")
             calibrated_model = CalibratedClassifierCV(
-                estimator=FrozenEstimator(best_rf),
-                method='isotonic'
+                estimator=final_rf_estimator,
+                method='isotonic',
+                cv=5
             )
             calibrated_model.fit(X_train, y_train)
 
@@ -56,4 +68,4 @@ class ModelTrainer:
             )
             return accuracy
         except Exception as e:
-            raise CustomException(e, sys)
+            raise CustomException(e, sys)

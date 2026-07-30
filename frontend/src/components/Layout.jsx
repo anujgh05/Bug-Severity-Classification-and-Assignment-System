@@ -25,17 +25,21 @@ export default function Layout({ children }) {
               <Bug className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">SVM Bug Triage</h1>
-              <p className="text-xs text-slate-400">55% Confidence Gatekeeper</p>
+              <h1 className="text-lg font-semibold">Bug Triage</h1>
             </div>
           </div>
 
           {isAuthenticated && (
             <nav className="flex items-center gap-2">
               {role === 'user' && (
-                <NavLink to="/submit-bug" className={navLinkClass}>
-                  Submit Bug
-                </NavLink>
+                <>
+                  <NavLink to="/submit-bug" className={navLinkClass}>
+                    Submit Bug
+                  </NavLink>
+                  <NavLink to="/user/my-bugs" className={navLinkClass}>
+                    My Bugs
+                  </NavLink>
+                </>
               )}
               {role === 'admin' && (
                 <NavLink to="/admin/triage" className={navLinkClass}>

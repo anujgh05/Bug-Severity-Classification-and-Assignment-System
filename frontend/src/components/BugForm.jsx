@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { submitBug } from '../api/axios.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import ConfidenceMeter from './ConfidenceMeter.jsx';
 
 export default function BugForm() {
+  const { userId } = useAuth();
   const [formData, setFormData] = useState({ summary: '', description: '' });
   const [loading, setLoading] = useState(false);
   const [ticketResponse, setTicketResponse] = useState(null);
@@ -15,12 +17,18 @@ export default function BugForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
     setTicketResponse(null);
 
+    const reporterId = userId && !Number.isNaN(Number(userId)) ? Number(userId) : null;
+    if (!reporterId) {
+      setError('Your session is not valid. Please sign out and sign in again.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const { data } = await submitBug(formData.summary, formData.description);
+      const { data } = await submitBug(formData.summary, formData.description, reporterId);
       setTicketResponse(data);
       setFormData({ summary: '', description: '' });
     } catch (err) {
@@ -116,9 +124,6 @@ export default function BugForm() {
             {ticketResponse.assigned_developer_id && (
               <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-emerald-300">
                 Automatically assigned to Developer #{ticketResponse.assigned_developer_id}
-                {ticketResponse.similarity_score != null && (
-                  <span> (Similarity: {ticketResponse.similarity_score}%)</span>
-                )}
               </div>
             )}
           </div>

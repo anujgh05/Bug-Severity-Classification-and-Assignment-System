@@ -25,16 +25,37 @@ api.interceptors.response.use(
   },
 );
 
-export const submitBug = (summary, description) =>
-  api.post('/bugs/submit', { summary, description });
+export const loginUser = (usernameOrEmail, password, role = null, developerId = null) =>
+  api.post('/auth/login', {
+    username_or_email: usernameOrEmail,
+    password,
+    role,
+    developer_id: developerId ? Number(developerId) : null,
+  });
+
+export const registerUser = (username, email, password, role = 'user', developerId = null) =>
+  api.post('/auth/register', {
+    username,
+    email,
+    password,
+    role,
+    developer_id: developerId ? Number(developerId) : null,
+  });
+
+export const submitBug = (summary, description, reporterUserId = null) =>
+  api.post('/bugs/submit', { summary, description, reporter_user_id: reporterUserId });
+
+export const getUserBugs = (userId) => api.get(`/user/${userId}/bugs`);
 
 export const getPendingBugs = () => api.get('/admin/pending');
 
 export const overrideBug = (bugId, severity) =>
   api.put(`/admin/override/${bugId}`, { severity });
 
-export const getDeveloperTasks = (developerId) =>
-  api.get(`/developer/${developerId}/tasks`);
+export const getDeveloperTasks = (developerId) => api.get(`/developer/${developerId}/tasks`);
+
+export const updateDeveloperBugStatus = (developerId, bugId, status) =>
+  api.put(`/developer/${developerId}/bugs/${bugId}/status`, { status });
 
 export const getDevelopers = () => api.get('/developers');
 

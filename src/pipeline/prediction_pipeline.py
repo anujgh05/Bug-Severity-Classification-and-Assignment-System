@@ -94,7 +94,7 @@ class PredictPipeline:
         except Exception as e:
             raise CustomException(e, sys)
      
-    def predict(self, summary, description):
+    def predict(self, summary, description, reporter_user_id: int = None):
         try:
             combined_text = f"{summary} {description}"
             cleaned_text = self.clean_text(combined_text)
@@ -112,21 +112,61 @@ class PredictPipeline:
                 severity_result = self.decode_map[predicted_class]
                 routing_status = "automated"
             else:
-                severity_result = f"Pending Manual Review (Low Confidence: {max_confidence*100:.1f}%)"
+                severity_result = self.decode_map[predicted_class]
                 routing_status = "pending_review"
 
             conn_info = "host=localhost dbname='Minor Project' user='postgres' password=2005 port=5432"
 
             with psycopg2.connect(conn_info) as conn:
                 with conn.cursor() as cur:
-                    query = """
-                    INSERT INTO bug_reports (summary, description, predicted_severity, final_severity, confidence_score, routing_status)
-                    VALUES (%s, %s, %s, %s, %s, %s) RETURNING bug_id;
-                    """
                     final_sev = severity_result if routing_status == "automated" else None
                     conf_float = float(max_confidence*100)
 
-                    cur.execute(query,(summary, description, severity_result, final_sev, conf_float, routing_status))
+                    if reporter_user_id is not None:
+                        query = """
+                        INSERT INTO bug_reports (
+                            summary,
+                            description,
+                            reporter_user_id,
+                            predicted_severity,
+                            final_severity,
+                            confidence_score,
+                            routing_status,
+                            bug_status
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING bug_id;
+                        """
+                        cur.execute(
+                            query,
+                            (
+                                summary,
+                                description,
+                                reporter_user_id,
+                                severity_result,
+                                final_sev,
+                                conf_float,
+                                routing_status,
+                                'pending',
+                            ),
+                        )
+                    else:
+                        query = """
+                        INSERT INTO bug_reports (
+                            summary,
+                            description,
+                            predicted_severity,
+                            final_severity,
+                            confidence_score,
+                            routing_status,
+                            bug_status
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING bug_id;
+                        """
+                        cur.execute(
+                            query,
+                            (summary, description, severity_result, final_sev, conf_float, routing_status, 'pending'),
+                        )
+
                     bug_id = cur.fetchone()[0]
             logging.info(f"Bug saved to database with ID: {bug_id} | Status: {routing_status}")
             return {
