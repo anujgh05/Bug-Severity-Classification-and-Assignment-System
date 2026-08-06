@@ -19,7 +19,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen">
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div className="flex w-full items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-indigo-600 p-2">
               <Bug className="h-5 w-5 text-white" />
@@ -66,7 +66,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="w-full px-4 py-8">{children}</main>
     </div>
   );
 }

@@ -27,10 +27,9 @@ class ModelTrainer:
 
             best_params = {
                 'class_weight': 'balanced',
-                'max_depth': None,
+                'max_depth': 16,
                 'max_features': 'sqrt',
-                'min_samples_leaf': 3,
-                'min_samples_split': 10,
+                'min_samples_leaf': 5,
                 'n_estimators': 500,
             }
 
@@ -39,7 +38,6 @@ class ModelTrainer:
                 n_estimators=best_params['n_estimators'],
                 max_depth=best_params['max_depth'],
                 min_samples_leaf=best_params['min_samples_leaf'],
-                min_samples_split=best_params['min_samples_split'],
                 max_features=best_params['max_features'],
                 random_state=42,
                 class_weight=best_params['class_weight'],

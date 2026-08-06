@@ -49,8 +49,13 @@ export const getUserBugs = (userId) => api.get(`/user/${userId}/bugs`);
 
 export const getPendingBugs = () => api.get('/admin/pending');
 
+export const getAdminBugs = () => api.get('/admin/bugs');
+
 export const overrideBug = (bugId, severity) =>
   api.put(`/admin/override/${bugId}`, { severity });
+
+export const adminOverrideBug = (bugId, payload) =>
+  api.put(`/admin/bugs/${bugId}/override`, payload);
 
 export const getDeveloperTasks = (developerId) => api.get(`/developer/${developerId}/tasks`);
 

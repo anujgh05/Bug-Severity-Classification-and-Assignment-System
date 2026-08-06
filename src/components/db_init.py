@@ -96,25 +96,33 @@ def initialize_database():
                     logging.info("Inserting developer profiles")
                     dummy_developers = [
                         (
-                            "Anish Sharma",
-                            "anish@company.com",
-                            "frontend react javascript html css UI component design rendering layout responsive web app",
-                        ),
-                        (
-                            "Sita Thapa",
-                            "sita@company.com",
-                            "backend python flask postgresql database query optimization authentication api rest token fastpi",
-                        ),
-                        (
-                            "Rohan Shrestha",
-                            "rohan@company.com",
-                            "memory leak exception segmentation fault c pointers assembly compiler kernel crash buffer overflow",
-                        ),
-                        (
-                            "Deepa Joshi",
-                            "deepa@company.com",
-                            "machine learning pipeline training model trainer svm processing tf-idf vectorizer parsing logic numpy pandas",
-                        ),
+                        "Anish Sharma",
+                        "anish@company.com",
+                        "frontend react javascript html css UI component design rendering layout responsive web app "
+                        "typescript dom browser css3 flexbox grid animation state hooks redux webpack bundler "
+                        "accessibility a11y cross-browser mobile viewport styling sass scss jsx virtual-dom router",
+                    ),
+                    (
+                        "Sita Thapa",
+                        "sita@company.com",
+                        "backend python flask postgresql database query optimization authentication api rest token fastapi "
+                        "sql orm sqlalchemy migration schema index transaction session middleware jwt oauth endpoint "
+                        "server microservice caching redis async request response crud validation serializer",
+                    ),
+                    (
+                        "Rohan Shrestha",
+                        "rohan@company.com",
+                        "memory leak exception segmentation fault c pointers assembly compiler kernel crash buffer overflow "
+                        "malloc free stack heap register debugger gdb null-pointer race-condition deadlock thread mutex "
+                        "core-dump binary bytecode optimization low-level embedded firmware driver syscall",
+                    ),
+                    (
+                        "Deepa Joshi",
+                        "deepa@company.com",
+                        "machine learning pipeline training model trainer svm processing tf-idf vectorizer parsing logic numpy pandas "
+                        "classifier regression feature-engineering scikit-learn sklearn calibration cross-validation gridsearch "
+                        "random-forest neural-network dataset preprocessing tokenization embedding accuracy precision recall f1-score",
+                    ),
                     ]
                     insert_query = """
                     INSERT INTO developer_profiles (name, email, expertise_profile) VALUES (%s, %s, %s);

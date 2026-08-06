@@ -97,7 +97,10 @@ export default function DevBoard() {
               <div className="mb-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="font-mono text-xs text-slate-500">#{task.bug_id}</p>
-                  <h3 className="mt-1 font-semibold text-white">{task.summary}</h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-white">{task.summary}</h3>
+                    <SeverityBadge severity={task.severity} />
+                  </div>
                 </div>
                 <div className="flex flex-col items-start gap-2">
                   <span className="rounded-full bg-slate-800 px-3 py-1 text-sm font-semibold text-slate-200">

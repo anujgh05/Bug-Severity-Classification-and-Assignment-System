@@ -21,14 +21,28 @@ app.add_middleware(
 
 CONN_INFO = "host=localhost dbname='Minor Project' user=postgres password=2005 port=5432"
 
-predict_pipeline = PredictPipeline()
-assignment_pipeline = AssignmentPipeline()
+predict_pipeline = None
+assignment_pipeline = None
 
 SEVERITY_MAP = {
     "Low": "Low Priority",
     "Medium": "Medium Priority",
     "High": "High Priority",
 }
+
+
+def get_predict_pipeline():
+    global predict_pipeline
+    if predict_pipeline is None:
+        predict_pipeline = PredictPipeline()
+    return predict_pipeline
+
+
+def get_assignment_pipeline():
+    global assignment_pipeline
+    if assignment_pipeline is None:
+        assignment_pipeline = AssignmentPipeline()
+    return assignment_pipeline
 
 
 def hash_password(password: str) -> str:
@@ -60,6 +74,11 @@ class BugSubmitRequest(BaseModel):
 
 class OverrideRequest(BaseModel):
     severity: str = Field(..., pattern="^(Low|Medium|High)$")
+
+
+class AdminBugOverrideRequest(BaseModel):
+    severity: Optional[str] = Field(default=None, pattern="^(Low|Medium|High)$")
+    assigned_developer_id: Optional[int] = None
 
 
 @app.post("/api/v1/auth/login")
@@ -115,6 +134,20 @@ def register(payload: RegisterRequest):
         with psycopg2.connect(CONN_INFO) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
+                    "SELECT username FROM users WHERE username = %s;",
+                    (payload.username,),
+                )
+                if cur.fetchone():
+                    raise HTTPException(status_code=400, detail="Username already exists")
+
+                cur.execute(
+                    "SELECT email FROM users WHERE email = %s;",
+                    (payload.email,),
+                )
+                if cur.fetchone():
+                    raise HTTPException(status_code=400, detail="Email already exists")
+
+                cur.execute(
                     """
                     INSERT INTO users (username, email, password_hash, role, developer_id)
                     VALUES (%s, %s, %s, %s, %s)
@@ -131,6 +164,8 @@ def register(payload: RegisterRequest):
                 user = cur.fetchone()
 
         return {"message": "User registered successfully", "user": user}
+    except HTTPException:
+        raise
     except psycopg2.IntegrityError:
         raise HTTPException(
             status_code=400, detail="Username or email already exists"
@@ -142,7 +177,8 @@ def register(payload: RegisterRequest):
 @app.post("/api/v1/bugs/submit")
 def submit_bug(payload: BugSubmitRequest):
     try:
-        result = predict_pipeline.predict(payload.summary, payload.description, payload.reporter_user_id)
+        pipeline = get_predict_pipeline()
+        result = pipeline.predict(payload.summary, payload.description, payload.reporter_user_id)
         confidence_pct = float(result["confidence"].replace("%", ""))
 
         response = {
@@ -159,7 +195,8 @@ def submit_bug(payload: BugSubmitRequest):
             response.pop('max_confidence', None)
 
         if result["status"] == "automated":
-            dev_id, sim_score = assignment_pipeline.assign_developer(
+            assignment = get_assignment_pipeline()
+            dev_id, sim_score = assignment.assign_developer(
                 result["bug_id"], result["cleaned_text"]
             )
             response["assigned_developer_id"] = dev_id
@@ -339,6 +376,130 @@ def override_bug(bug_id: int, payload: OverrideRequest):
             "routing_status": "automated",
             "assigned_developer_id": dev_id,
             "similarity_score": round(sim_score * 100, 1),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/v1/admin/bugs")
+def get_admin_bugs():
+    try:
+        query = """
+            SELECT b.bug_id,
+                   b.summary,
+                   b.description,
+                   b.predicted_severity,
+                   b.final_severity,
+                   b.confidence_score,
+                   b.routing_status,
+                   b.bug_status,
+                   b.assigned_dev_id,
+                   d.name AS assigned_developer_name,
+                   b.created_at,
+                   b.reporter_user_id
+            FROM bug_reports b
+            LEFT JOIN developer_profiles d ON b.assigned_dev_id = d.developer_id
+            ORDER BY b.created_at DESC;
+        """
+        with psycopg2.connect(CONN_INFO) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query)
+                rows = cur.fetchall()
+
+        return [
+            {
+                "bug_id": row["bug_id"],
+                "summary": row["summary"],
+                "description": row["description"],
+                "severity": row["final_severity"] or row["predicted_severity"],
+                "predicted_severity": row["predicted_severity"],
+                "final_severity": row["final_severity"],
+                "max_confidence": float(row["confidence_score"]) if row["confidence_score"] else None,
+                "routing_status": row["routing_status"],
+                "bug_status": row["bug_status"],
+                "assigned_developer_id": row["assigned_dev_id"],
+                "assigned_developer_name": row["assigned_developer_name"],
+                "reporter_user_id": row["reporter_user_id"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.put("/api/v1/admin/bugs/{bug_id}/override")
+def admin_override_bug(bug_id: int, payload: AdminBugOverrideRequest):
+    try:
+        with psycopg2.connect(CONN_INFO) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT bug_id, summary, description, assigned_dev_id, routing_status FROM bug_reports WHERE bug_id = %s;",
+                    (bug_id,),
+                )
+                bug = cur.fetchone()
+                if not bug:
+                    raise HTTPException(status_code=404, detail="Bug not found")
+
+                current_assigned_id = bug["assigned_dev_id"]
+                new_assigned_id = payload.assigned_developer_id
+
+                if new_assigned_id is not None:
+                    cur.execute(
+                        "SELECT developer_id FROM developer_profiles WHERE developer_id = %s AND is_active = TRUE;",
+                        (new_assigned_id,),
+                    )
+                    if not cur.fetchone():
+                        raise HTTPException(status_code=400, detail="Developer not found")
+
+                if current_assigned_id != new_assigned_id:
+                    if current_assigned_id is not None:
+                        cur.execute(
+                            "UPDATE developer_profiles SET current_workload = GREATEST(current_workload - 1, 0) WHERE developer_id = %s;",
+                            (current_assigned_id,),
+                        )
+                    if new_assigned_id is not None:
+                        cur.execute(
+                            "UPDATE developer_profiles SET current_workload = current_workload + 1 WHERE developer_id = %s;",
+                            (new_assigned_id,),
+                        )
+
+                severity_value = None
+                if payload.severity:
+                    severity_value = SEVERITY_MAP[payload.severity]
+                    cur.execute(
+                        """
+                        UPDATE bug_reports
+                        SET final_severity = %s, predicted_severity = %s, routing_status = 'automated'
+                        WHERE bug_id = %s;
+                        """,
+                        (severity_value, severity_value, bug_id),
+                    )
+
+                cur.execute(
+                    "UPDATE bug_reports SET assigned_dev_id = %s WHERE bug_id = %s;",
+                    (new_assigned_id, bug_id),
+                )
+
+                if payload.severity and current_assigned_id is None and new_assigned_id is None:
+                    combined_text = f"{bug['summary']} {bug['description']}"
+                    cleaned_text = get_predict_pipeline().clean_text(combined_text)
+                    auto_dev_id, _ = get_assignment_pipeline().assign_developer(bug_id, cleaned_text)
+                    new_assigned_id = auto_dev_id
+
+                cur.execute(
+                    "SELECT assigned_dev_id FROM bug_reports WHERE bug_id = %s;",
+                    (bug_id,),
+                )
+                final_assigned = cur.fetchone()["assigned_dev_id"]
+
+        return {
+            "bug_id": bug_id,
+            "severity": severity_value or None,
+            "assigned_developer_id": final_assigned,
+            "routing_status": "automated",
         }
     except HTTPException:
         raise

@@ -125,9 +125,10 @@ class DataTransformation:
             logging.info("Applying TF-IDF Vectorization")
 
             tfidf = TfidfVectorizer(
-            max_features=10000, ngram_range=(1, 2), sublinear_tf=True,
+            max_features=3000,   # was 10000 — short descriptions don't need a bigger vocab
+            ngram_range=(1, 2), sublinear_tf=True,
             min_df=2, max_df=0.95, strip_accents='unicode', analyzer='word',
-         )
+            )
 
             
             X_train = tfidf.fit_transform(train_df['text_features'])
