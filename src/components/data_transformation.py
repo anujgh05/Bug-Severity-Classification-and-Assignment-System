@@ -108,7 +108,7 @@ class DataTransformation:
 
             for df in [train_df, test_df]:
                 df['severity'] = df['severity'].fillna('').astype(str).str.strip().str.lower()
-                df.drop(df[df['severity'].isin(['--', 'normal', 'nan', ''])].index, inplace=True)
+                df.drop(df[df['severity'].isin(['--', 'normal', 'nan', '','NEEDS_REVIEW'])].index, inplace=True)
                 df['severity'] = df['severity'].map(self.severity_map)
                 df.dropna(subset=['severity'], inplace=True)
 
