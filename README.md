@@ -172,8 +172,8 @@ Input Bug Description
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/bug-severity-system.git
-cd bug-severity-system
+git clone https://github.com/anujgh05/Bug-Severity-Classification-and-Assignment-System
+cd Bug-Severity-Classification-and-Assignment-System
 ```
 
 ### 2. Backend Setup
@@ -581,19 +581,6 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 👤 Author
-
-**Anuj Ghimire**
-- Email: anuj2005.ghimire@gmail.com
-- GitHub: [Your GitHub Profile]
-
----
 
 ## 🙏 Acknowledgments
 
@@ -607,14 +594,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📞 Support
 
 For issues, questions, or suggestions, please:
-- Open an [GitHub Issue](https://github.com/yourusername/bug-severity-system/issues)
+- Open an [GitHub Issue](https://github.com/anujgh05/Bug-Severity-Classification-and-Assignment-System/issues)
 - Email: anuj2005.ghimire@gmail.com
 
 ---
 
-<div align="center">
-
-Made with ❤️ by Anuj Ghimire
 
 [⬆ Back to top](#bug-severity-classification-and-assignment-system)
 
@@ -647,7 +631,7 @@ Clone the repository and spin up an isolated virtual environment:
 
 ```bash
 # Clone the workspace
-git clone https://github.com/yourusername/bug-triage-system.git
+git clone https://github.com/anujgh05/Bug-Severity-Classification-and-Assignment-System
 cd bug-triage-system
 
 # Create and activate environment
