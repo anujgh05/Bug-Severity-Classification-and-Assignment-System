@@ -1,53 +1,624 @@
 
-
----
-
 # Bug Severity Classification and Assignment System
 
-An automated, data-driven Intelligent Triage Engine designed to optimize software maintenance workflows. The system leverages machine learning to classify incoming bug reports into distinct severity tiers and utilizes advanced semantic vector mapping to automatically route tasks to the most suitable developers while dynamically balancing active workloads.
+<div align="center">
 
-## 🚀 Core Features
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-336791)
+![React](https://img.shields.io/badge/React-19.2%2B-61dafb)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-* **Automated Severity Classification:** Implements a Support Vector Machine (SVM) pipeline using TF-IDF feature engineering to classify bug descriptions into four severity metrics (`Low`, `Medium`, `High`, `Critical`).
-* **Confidence-Based Gatekeeper (DSS):** Utilizes Platt Scaling probability estimations to enforce a minimum $55\%$ operational threshold. Ambiguous, low-confidence entries are flagged for manual review to preserve data integrity.
-* **Dynamic Semantic Routing:** Maps incoming text requests against available development pools via **Cosine Similarity** matrix comparisons to ensure precise expertise alignment.
-* **Dynamic Load Balancing:** Implements a structural heuristic step-penalty ($\Delta = 0.15$) on overloaded nodes ($\ge 5$ active tickets) to prevent developer burnout and minimize pipeline bottlenecks.
-* **Relational Integrity Core:** Backed by an atomic, multi-table PostgreSQL transaction layer tracking ticket states, team workload metrics, and permanent historical allocations.
+**An intelligent automated bug triage system that leverages machine learning to classify bug severity and intelligently route tickets to developers based on expertise and workload.**
+
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [API Docs](#-api-documentation) • [Architecture](#-architecture) • [Contributing](#-contributing)
+
+</div>
 
 ---
 
-## 🏗️ System Architecture
+## 📋 Table of Contents
 
-The system is engineered as an integrated **Three-Tier Architecture** that enforces a strict separation of concerns between raw mathematical modeling, server routing, and structural data storage.
+- [Overview](#overview)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [API Documentation](#-api-documentation)
+- [Project Structure](#-project-structure)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-```text
-  [ Presentation Layer ]          [ Application Layer ]            [ Data Layer ]
-  ┌────────────────────┐          ┌────────────────────┐        ┌──────────────────┐
-  │  React / HTML UI   │ ◄──────► │ Flask / FastAPI    │ ◄────► │  PostgreSQL DB   │
-  │  (Triage Dashboard)│  (REST)  │ (Predict Pipeline) │ (SQL)  │ (Bugs & Devs tabs)│
-  └────────────────────┘          └────────────────────┘        └──────────────────┘
+---
+
+## Overview
+
+The **Bug Severity Classification and Assignment System** is an intelligent triage engine that automates the process of classifying bug reports by severity and assigning them to the most appropriate developers. Built with machine learning and modern web technologies, this system optimizes software maintenance workflows by:
+
+- **Automating severity classification** using trained machine learning models
+- **Intelligently routing bugs** based on developer expertise and workload
+- **Enforcing quality gates** with confidence thresholds for manual review
+- **Providing role-based dashboards** for users, developers, and administrators
+- **Tracking workload metrics** to prevent developer burnout
+
+---
+
+## 🚀 Features
+
+### Core Capabilities
+
+- **🤖 Intelligent Severity Classification**
+  - Machine learning-powered bug classification (Low, Medium, High)
+  - TF-IDF feature extraction with dimensionality reduction
+  - Confidence-based prediction with automatic quality gates
+  - Low-confidence predictions flagged for manual review
+
+- **🎯 Smart Bug Assignment**
+  - Semantic similarity-based routing using cosine distance
+  - Expertise-aware developer matching
+  - Dynamic load balancing to prevent burnout
+  - Workload metric tracking per developer
+
+- **👥 Role-Based Access Control**
+  - **Users**: Submit bugs and track their status
+  - **Developers**: View and manage assigned tickets
+  - **Administrators**: Triage dashboard, override classifications, manage users
+
+- **📊 Analytics & Dashboard**
+  - Real-time bug status tracking
+  - Developer workload visualization
+  - Severity distribution metrics
+  - Classification confidence metrics
+
+- **🔒 Security Features**
+  - Password hashing with SHA-256
+  - Role-based access control
+  - Protected API endpoints
+  - CORS-enabled for frontend integration
+
+---
+
+## 🏗️ Architecture
+
+### System Design
+
+The system follows a **Three-Tier Architecture** pattern with clear separation of concerns:
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                   PRESENTATION LAYER                        │
+│              React / Vite Frontend Dashboard                │
+│          (Bug Submission, Triage, User Management)          │
+└────────────────┬────────────────────────────┬────────────────┘
+                 │ HTTP/REST                  │
+                 ↓                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  APPLICATION LAYER                          │
+│              FastAPI Backend Server (api.py)                │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  • User Authentication & Authorization                 │ │
+│  │  • Bug Prediction Pipeline (Classification)            │ │
+│  │  • Bug Assignment Pipeline (Routing & Load Balancing)  │ │
+│  │  • Database Query Orchestration                        │ │
+│  └────────────────────────────────────────────────────────┘ │
+└────────────────┬────────────────────────────┬────────────────┘
+                 │ SQL Queries                │
+                 ↓                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                      DATA LAYER                             │
+│         PostgreSQL Database (Multi-table Schema)            │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  • Users Table (users, roles, credentials)             │ │
+│  │  • Bugs Table (submissions, severity, status)          │ │
+│  │  • Developers Table (expertise, workload metrics)      │ │
+│  │  • Audit Logs (classification history, overrides)      │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
 
-1. **Presentation Layer:** A responsive dashboard for users to submit bug entries and triage managers to supervise flagged tasks.
-2. **Application Layer:** An isolated processing backend orchestrating text normalization, TF-IDF transformations, SVM soft-classification boundaries, and localized corpus vectorization.
-3. **Data Layer:** A reliable PostgreSQL instance handling relational schema enforcement, primary key B-Tree indexing, and transaction tracking.
+### ML Pipeline Components
 
-> ⚠️ **Development Status Note on Frontend:** The current implementation of `app.py` serves strictly as a **temporary backend prototype and functional proof-of-concept**. It renders basic HTML elements to demonstrate data flows, pipeline logs, and database entry generation. Building the decoupled, comprehensive production frontend (e.g., using a modern component-based framework like React) is planned for the next implementation phase.
+```
+Input Bug Description
+         ↓
+    [Text Preprocessing]
+    - Tokenization
+    - Lowercasing
+    - Stop word removal
+         ↓
+    [Feature Extraction]
+    - TF-IDF Vectorization
+    - Dimensionality Reduction (TruncatedSVD)
+         ↓
+    [Classification Model]
+    - Random Forest Classifier
+    - Calibration (Platt Scaling)
+         ↓
+    [Confidence Gate]
+    - 55% Confidence Threshold
+    - Low confidence → Manual Review
+         ↓
+    [Assignment Pipeline]
+    - Semantic Similarity Matching
+    - Developer Workload Analysis
+    - Load-balanced Routing
+         ↓
+    Assigned Developer + Severity
+```
 
 ---
 
-## 📁 Repository Structure
+## 📋 Prerequisites
 
-```text
-├── artifacts/                  # Trained serialized assets (.pkl, .csv)
-├── src/
-│   ├── components/
-│   │   ├── data_ingestion.py   # Pipeline raw content importing
-│   │   ├── data_transformation.py # Feature extraction and token clean sweeps
-│   │   └── model_trainer.py    # SVM model training script
-│   ├── pipeline/
-│   │   ├── predict_pipeline.py # Classification inference logic
+### System Requirements
+
+- **Python**: 3.8 or higher
+- **Node.js**: 16.0 or higher
+- **PostgreSQL**: 13 or higher
+- **RAM**: Minimum 4GB (8GB recommended for model training)
+- **Disk Space**: 2GB for dependencies and artifacts
+
+### Required Accounts/Services
+
+- PostgreSQL database server (local or remote)
+- (Optional) Cloud deployment services for production
+
+---
+
+## 🔧 Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/bug-severity-system.git
+cd bug-severity-system
+```
+
+### 2. Backend Setup
+
+#### Create Python Virtual Environment
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+```
+
+#### Install Python Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Database Setup
+
+#### Create PostgreSQL Database
+
+```sql
+CREATE DATABASE "Minor Project";
+```
+
+#### Initialize Database Schema
+
+```bash
+python -c "from src.components.db_init import initialize_database; initialize_database()"
+```
+
+### 4. Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+### 5. Train the ML Model (Optional)
+
+To train the model on your dataset:
+
+```bash
+python -c "from src.pipeline.train_pipeline import TrainPipeline; pipeline = TrainPipeline(); pipeline.initiate_train_pipeline()"
+```
+
+---
+
+## ⚙️ Configuration
+
+### Backend Configuration
+
+Edit `api.py` to configure database connection:
+
+```python
+CONN_INFO = "host=localhost dbname='Minor Project' user=postgres password=YOUR_PASSWORD port=5432"
+```
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/Minor Project
+BACKEND_PORT=8000
+FRONTEND_URL=http://localhost:5173
+SECRET_KEY=your_secret_key_here
+CONFIDENCE_THRESHOLD=0.55
+```
+
+### Frontend Configuration
+
+The frontend is configured to connect to the backend at `http://localhost:8000`. Update `frontend/src/api/axios.js` if running on a different port.
+
+---
+
+## 🚀 Usage
+
+### Start the Backend Server
+
+```bash
+# Make sure virtual environment is activated
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at `http://localhost:8000`
+- API Documentation: `http://localhost:8000/docs`
+- Alternative Docs: `http://localhost:8000/redoc`
+
+### Start the Frontend Development Server
+
+```bash
+cd frontend
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`
+
+### Build Frontend for Production
+
+```bash
+cd frontend
+npm run build
+```
+
+---
+
+## 📚 API Documentation
+
+### Authentication Endpoints
+
+#### Register User
+
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "john_doe",
+  "email": "john@example.com",
+  "password": "securepass123",
+  "role": "user"
+}
+```
+
+#### Login
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username_or_email": "john_doe",
+  "password": "securepass123",
+  "role": "user"
+}
+```
+
+### Bug Management Endpoints
+
+#### Submit Bug Report
+
+```http
+POST /api/v1/bugs/submit
+Content-Type: application/json
+
+{
+  "summary": "Login button not working",
+  "description": "The login button on the homepage is unresponsive when clicked...",
+  "reporter_user_id": 1
+}
+```
+
+Response:
+```json
+{
+  "bug_id": 101,
+  "summary": "Login button not working",
+  "predicted_severity": "High",
+  "confidence": 0.87,
+  "assigned_developer_id": 5,
+  "status": "assigned"
+}
+```
+
+#### Get User Bugs
+
+```http
+GET /api/v1/bugs/user/{user_id}
+```
+
+#### Get Developer Assigned Bugs
+
+```http
+GET /api/v1/bugs/developer/{developer_id}
+```
+
+#### Override Bug Classification (Admin)
+
+```http
+POST /api/v1/bugs/{bug_id}/override
+Content-Type: application/json
+
+{
+  "severity": "Critical",
+  "assigned_developer_id": 3
+}
+```
+
+### Complete API Reference
+
+For complete API documentation with all endpoints, parameters, and response schemas, visit:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+---
+
+## 📁 Project Structure
+
+```
+bug-severity-system/
+├── artifacts/                      # Trained ML models and datasets
+│   ├── model.pkl                   # Serialized Random Forest model
+│   ├── tfidf_vectorizer.pkl        # TF-IDF vectorizer
+│   ├── train.csv                   # Training dataset
+│   ├── test.csv                    # Test dataset
+│   └── cleaned_bug_dataset.csv     # Preprocessed data
+│
+├── src/                            # Source code
+│   ├── __init__.py
+│   ├── exception.py                # Custom exception handling
+│   ├── logger.py                   # Logging configuration
+│   ├── utils.py                    # Utility functions
+│   │
+│   ├── components/                 # Data processing components
+│   │   ├── __init__.py
+│   │   ├── data_ingestion.py       # Load raw bug dataset
+│   │   ├── data_transformation.py  # TF-IDF vectorization, preprocessing
+│   │   ├── model_trainer.py        # Random Forest model training
+│   │   ├── db_init.py              # Database schema initialization
+│   │   └── figures.py              # Data visualization utilities
+│   │
+│   └── pipeline/                   # ML pipelines
+│       ├── __init__.py
+│       ├── train_pipeline.py       # End-to-end training pipeline
+│       ├── prediction_pipeline.py  # Severity classification inference
+│       └── assignment_pipeline.py  # Semantic routing & load balancing
+│
+├── frontend/                       # React Vite frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── components/             # React components
+│   │   │   ├── BugForm.jsx         # Bug submission form
+│   │   │   ├── TriageTable.jsx     # Bug triage dashboard
+│   │   │   ├── DevBoard.jsx        # Developer dashboard
+│   │   │   ├── ConfidenceMeter.jsx # Confidence visualization
+│   │   │   └── Layout.jsx          # Common layout wrapper
+│   │   │
+│   │   ├── pages/                  # Page components
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── UserLoginPage.jsx
+│   │   │   ├── AdminLoginPage.jsx
+│   │   │   ├── DeveloperLoginPage.jsx
+│   │   │   ├── SubmitBugPage.jsx
+│   │   │   ├── UserBugsPage.jsx
+│   │   │   ├── DeveloperTasksPage.jsx
+│   │   │   └── AdminTriagePage.jsx
+│   │   │
+│   │   ├── context/                # React Context
+│   │   │   ├── AuthContext.jsx
+│   │   │   └── ThemeContext.jsx
+│   │   │
+│   │   ├── api/                    # API integration
+│   │   │   └── axios.js            # Axios instance with interceptors
+│   │   │
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── index.css
+│   │
+│   ├── package.json
+│   ├── vite.config.js
+│   └── index.html
+│
+├── logs/                           # Application logs
+│
+├── api.py                          # Main FastAPI application
+├── setup.py                        # Package configuration
+├── requirements.txt                # Python dependencies
+├── README.md                       # This file
+└── .gitignore
+```
+
+---
+
+## 🔌 Technologies Used
+
+### Backend
+- **FastAPI** - Modern async Python web framework
+- **PostgreSQL** - Relational database
+- **scikit-learn** - Machine learning library
+- **NLTK** - Natural language processing
+- **psycopg2** - PostgreSQL adapter
+
+### Frontend
+- **React 19.2** - UI library
+- **Vite** - Build tool and dev server
+- **React Router** - Client-side routing
+- **Axios** - HTTP client
+- **Tailwind CSS** - CSS framework
+- **Lucide React** - Icon library
+
+### ML/Data Processing
+- **scikit-learn** - SVM, Random Forest, TF-IDF
+- **pandas** - Data manipulation
+- **numpy** - Numerical computing
+- **NLTK** - Text preprocessing
+- **beautifulsoup4** - HTML parsing
+
+---
+
+## 📊 Model Details
+
+### Classification Model
+- **Algorithm**: Random Forest Classifier (500 estimators)
+- **Feature Engineering**: TF-IDF vectorization
+- **Dimensionality Reduction**: TruncatedSVD (300 components)
+- **Calibration**: Platt Scaling for probability estimation
+- **Confidence Threshold**: 55% (predictions below this are flagged for review)
+
+### Assignment Algorithm
+- **Method**: Cosine Similarity-based semantic matching
+- **Considerations**:
+  - Developer expertise areas
+  - Current workload (penalty for ≥ 5 active tickets)
+  - Load balancing penalty: Δ = 0.15
+
+---
+
+## 🧪 Testing
+
+### Run Unit Tests
+
+```bash
+# Test backend components
+python -m pytest tests/ -v
+```
+
+### Test API Endpoints
+
+Use the interactive API documentation:
+- Swagger UI: `http://localhost:8000/docs`
+- Try out endpoints directly in the browser
+
+---
+
+## 🔐 Security Considerations
+
+- Passwords are hashed using SHA-256 with a salt
+- CORS is configured for frontend origin
+- Role-based access control is enforced
+- SQL injection prevention through parameterized queries
+- Input validation on all API endpoints
+
+---
+
+## 📈 Performance Optimization
+
+- Database queries use indexed columns
+- TruncatedSVD reduces model inference time
+- Frontend uses Vite for fast build and HMR
+- API responses are optimized with selective field retrieval
+- Model artifacts are serialized for fast loading
+
+---
+
+## 🐛 Troubleshooting
+
+### Database Connection Error
+```
+Error: could not connect to server: Connection refused
+```
+**Solution**: Ensure PostgreSQL is running and credentials are correct in `CONN_INFO`
+
+### Model Not Found
+```
+Error: artifacts/model.pkl not found
+```
+**Solution**: Train the model using the train pipeline before running predictions
+
+### Frontend Cannot Connect to API
+```
+Error: CORS policy: blocked by CORS
+```
+**Solution**: Verify the FastAPI server is running on `http://localhost:8000` and update `CORS` settings if needed
+
+### Port Already in Use
+```
+Error: Address already in use
+```
+**Solution**: Change the port or kill the existing process using that port
+
+---
+
+## 📝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Code Style
+- Follow PEP 8 for Python code
+- Use meaningful variable names
+- Add docstrings to functions
+- Write unit tests for new features
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 👤 Author
+
+**Anuj Ghimire**
+- Email: anuj2005.ghimire@gmail.com
+- GitHub: [Your GitHub Profile]
+
+---
+
+## 🙏 Acknowledgments
+
+- scikit-learn team for the excellent ML library
+- FastAPI documentation and community
+- React team for the UI framework
+- PostgreSQL for reliable data storage
+
+---
+
+## 📞 Support
+
+For issues, questions, or suggestions, please:
+- Open an [GitHub Issue](https://github.com/yourusername/bug-severity-system/issues)
+- Email: anuj2005.ghimire@gmail.com
+
+---
+
+<div align="center">
+
+Made with ❤️ by Anuj Ghimire
+
+[⬆ Back to top](#bug-severity-classification-and-assignment-system)
+
+</div>
 │   │   └── assignment_pipeline.py # Cosine similarity allocation matching
 │   ├── exception.py            # Global custom system exceptions tracker
 │   ├── logger.py               # Runtime operational activity logging
