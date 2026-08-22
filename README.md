@@ -7,7 +7,6 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-336791)
 ![React](https://img.shields.io/badge/React-19.2%2B-61dafb)
-![License](https://img.shields.io/badge/License-MIT-green)
 
 **An intelligent automated bug triage system that leverages machine learning to classify bug severity and intelligently route tickets to developers based on expertise and workload.**
 
